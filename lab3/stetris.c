@@ -68,19 +68,20 @@ gameConfig game = {
 
 //Frame buffer variables
 int framebufferFileDescriptor = -1;
-uint16_t *framebuffer = NULL;
+uint16_t *framebuffer = NULL; //TODO: why these variable types??
 size_t framebufferSize = 0;
 struct fb_fix_screeninfo framebufferInfo;
+#define FRAMEBUFFER_CYCLE 32
 
 // This function is called on the start of your application
 // Here you can initialize what ever you need for your task
 // return false if something fails, else true
 bool initializeSenseHat()
 {
-    char path[32];//TODO: MAKE ITHIS A SMALLER VALUE?
+    char path[12];
     struct fb_fix_screeninfo information;
 
-    for (int i = 0; i < 32; i++) // TODO: DON'T JUST GUESS, MAKE THIS MORE ROBUST, MAYBE USE opendir() AND readdir()
+    for (int i = 0; i < FRAMEBUFFER_CYCLE; i++)
     {
         snprintf(path, sizeof(path), "/dev/fb%d", i); //dev//fb(i)
         int fileDescriptor = open(path, O_RDWR);
@@ -109,7 +110,7 @@ bool initializeSenseHat()
             MAP_SHARED, framebufferFileDescriptor, 0);
 
         if (framebuffer == MAP_FAILED){
-            perror("mmap");
+            printf("Failed to map framebuffer\n");
             framebuffer = NULL;
             close(framebufferFileDescriptor);
             framebufferFileDescriptor = -1;
@@ -126,7 +127,7 @@ bool initializeSenseHat()
         return true;
     }
 
-    fprintf(stderr, "ERROR: could not find RPi-Sense FB\n");
+    printf( "ERROR: could not find RPi-Sense FB\n");
     return false;
 }
 
@@ -134,6 +135,26 @@ bool initializeSenseHat()
 // Here you can free up everything that you might have opened/allocated
 void freeSenseHat()
 {
+    // Unmap framebuffer memory
+    if (framebuffer != NULL) {
+        if (munmap(framebuffer, framebufferSize) == -1){
+            printf("Failed to unmap framebuffer\n");
+        }
+
+        printf("Framebuffer unmapped\n");
+        framebuffer = NULL;
+        framebufferSize = 0;
+    }
+
+    // Close framebuffer device
+    if (framebufferFileDescriptor >= 0){
+        if (close(framebufferFileDescriptor) == -1){
+            printf("Failed to close framebuffer\n");
+        }
+
+        printf("Framebuffer closed\n");
+        framebufferFileDescriptor = -1;
+    }
 }
 
 // This function should return the key that corresponds to the joystick press
