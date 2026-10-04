@@ -66,22 +66,28 @@ gameConfig game = {
     .initNextGameTick = 50,
 };
 
-//Frame buffer variables
+// Framebuffer variables
 int framebufferFileDescriptor = -1;
-uint16_t *framebuffer = NULL; //TODO: why these variable types??
+uint16_t *framebuffer = NULL;
 size_t framebufferSize = 0;
 struct fb_fix_screeninfo framebufferInfo;
 #define FRAMEBUFFER_CYCLE 32
+
+// Joystick variables
+int joystickFileDescriptor = -1;
+#define JOYSTICK_CYCLE 32
 
 // This function is called on the start of your application
 // Here you can initialize what ever you need for your task
 // return false if something fails, else true
 bool initializeSenseHat()
 {
-    char path[12];
-    struct fb_fix_screeninfo information;
+    // TODO: REMOVE FILLER??? too many checks?
+    char path[32];
 
-    for (int i = 0; i < FRAMEBUFFER_CYCLE; i++)
+    // FIND SENSE HAT FRAMEBUFFER
+    struct fb_fix_screeninfo information;
+    for (int i = 0; i < FRAMEBUFFER_CYCLE; i++) //TODO: NOT HAVE BOUNDED SEARCH APPROACH?
     {
         snprintf(path, sizeof(path), "/dev/fb%d", i); //dev//fb(i)
         int fileDescriptor = open(path, O_RDWR);
@@ -122,13 +128,110 @@ bool initializeSenseHat()
 
         printf("Sense HAT framebuffer found at %s\n", path);
 
-        //TODO: REMOVE THIS TEMPORARY TEST
-        sleep(10);
-        return true;
+        break;
     }
 
-    printf( "ERROR: could not find RPi-Sense FB\n");
-    return false;
+    //Did we find framevbuffer?
+    if (framebufferFileDescriptor < 0){
+        printf( "ERROR: could not find RPi-Sense FB\n");
+        return false;
+    }
+
+    //FIND SENSE HAT JOYSTICK
+    char name[256];
+    for (int i = 0; i < JOYSTICK_CYCLE; i++)
+    {
+        snprintf(path, sizeof(path), "/dev/input/event%d", i);
+        int fileDescriptor = open(path, O_RDONLY | O_NONBLOCK);
+        if (fileDescriptor < 0) {
+            continue;
+        }
+
+        if (ioctl(fileDescriptor, EVIOCGNAME(sizeof(name)), name) == -1) {
+            close(fileDescriptor);
+            continue;
+        }
+
+        printf("Found input device %s: %s\n", path, name);
+        if (strcmp(name, "Raspberry Pi Sense HAT Joystick") != 0) {
+            close(fileDescriptor);
+            continue;
+        }
+
+        // We found the Sense HAT joystick :P
+        joystickFileDescriptor = fileDescriptor;
+        printf("Sense HAT joystick found at %s\n", path);
+
+        //TODO: REMOVE THIS TEMPORARY TEST
+        sleep(10);
+        break;
+    }
+
+    // Did we actually find a joystick?
+    if (joystickFileDescriptor < 0) {
+        printf("ERROR: could not find RPi-Sense Joystick\n");
+
+        // FRAMEBUFFER was initialized, so clean that up
+        munmap(framebuffer, framebufferSize);
+        framebuffer = NULL;
+        framebufferSize = 0;
+        close(framebufferFileDescriptor);
+        framebufferFileDescriptor = -1;
+
+        return false;
+    }
+
+    // TEMPORARY JOYSTICK TEST
+    printf("Testing joystick. Press center to finish test.\n");
+
+    while (true)
+    {
+        struct pollfd joystickPoll = {
+            .fd = joystickFileDescriptor,
+            .events = POLLIN
+        };
+
+        int pollResult = poll(&joystickPoll, 1, 100);
+
+        if (pollResult < 0)
+        {
+            perror("poll");
+            break;
+        }
+
+        if (pollResult == 0)
+        {
+            continue;
+        }
+
+        if (joystickPoll.revents & POLLIN)
+        {
+            struct input_event event;
+
+            ssize_t bytesRead =
+                read(joystickFileDescriptor,
+                     &event,
+                     sizeof(event));
+
+            if (bytesRead == sizeof(event) &&
+                event.type == EV_KEY)
+            {
+                printf("code=%d value=%d\n",
+                       event.code,
+                       event.value);
+
+                fflush(stdout);
+
+                if (event.code == KEY_ENTER &&
+                    event.value == 1)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 // This function is called when the application exits
@@ -154,6 +257,26 @@ void freeSenseHat()
 
         printf("Framebuffer closed\n");
         framebufferFileDescriptor = -1;
+    }
+
+    //TODO: FIX WHICH FREE SNESE HAT
+    if (framebuffer != NULL)
+    {
+        munmap(framebuffer, framebufferSize);
+        framebuffer = NULL;
+        framebufferSize = 0;
+    }
+
+    if (framebufferFileDescriptor >= 0)
+    {
+        close(framebufferFileDescriptor);
+        framebufferFileDescriptor = -1;
+    }
+
+    if (joystickFileDescriptor >= 0)
+    {
+        close(joystickFileDescriptor);
+        joystickFileDescriptor = -1;
     }
 }
 
