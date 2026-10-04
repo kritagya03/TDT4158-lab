@@ -120,6 +120,9 @@ bool initializeSenseHat()
         framebuffer[0] = 0xF800;
 
         printf("Sense HAT framebuffer found at %s\n", path);
+
+        //TODO: REMOVE THIS TEMPORARY TEST
+        sleep(30);
         return true;
     }
 
