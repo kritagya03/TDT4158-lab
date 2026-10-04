@@ -122,7 +122,7 @@ bool initializeSenseHat()
         printf("Sense HAT framebuffer found at %s\n", path);
 
         //TODO: REMOVE THIS TEMPORARY TEST
-        sleep(30);
+        sleep(10);
         return true;
     }
 
