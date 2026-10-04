@@ -80,18 +80,19 @@ int joystickFileDescriptor = -1;
 // This function is called on the start of your application
 // Here you can initialize what ever you need for your task
 // return false if something fails, else true
+
+//TODO: NOT HAVE BOUNDED SEARCH APPROACH?
 bool initializeSenseHat()
 {
-    // TODO: REMOVE FILLER??? too many checks?
     char path[32];
 
     // FIND SENSE HAT FRAMEBUFFER
     struct fb_fix_screeninfo information;
-    for (int i = 0; i < FRAMEBUFFER_CYCLE; i++) //TODO: NOT HAVE BOUNDED SEARCH APPROACH?
+    for (int i = 0; i < FRAMEBUFFER_CYCLE; i++)
     {
         snprintf(path, sizeof(path), "/dev/fb%d", i); //dev//fb(i)
         int fileDescriptor = open(path, O_RDWR);
-        if (fileDescriptor < 0) { // Valid descriptors are non-negative
+        if (fileDescriptor < 0) {
             continue;
         }
 
@@ -123,11 +124,7 @@ bool initializeSenseHat()
             return false;
         }
 
-        //TODO: REMOVE THIS TEMPORARY TEST
-        framebuffer[1] = 0xF800;
-
         printf("Sense HAT framebuffer found at %s\n", path);
-
         break;
     }
 
@@ -181,56 +178,6 @@ bool initializeSenseHat()
         return false;
     }
 
-    // TEMPORARY JOYSTICK TEST
-    printf("Testing joystick. Press center to finish test.\n");
-
-    while (true)
-    {
-        struct pollfd joystickPoll = {
-            .fd = joystickFileDescriptor,
-            .events = POLLIN
-        };
-
-        int pollResult = poll(&joystickPoll, 1, 100);
-
-        if (pollResult < 0)
-        {
-            perror("poll");
-            break;
-        }
-
-        if (pollResult == 0)
-        {
-            continue;
-        }
-
-        if (joystickPoll.revents & POLLIN)
-        {
-            struct input_event event;
-
-            ssize_t bytesRead =
-                read(joystickFileDescriptor,
-                     &event,
-                     sizeof(event));
-
-            if (bytesRead == sizeof(event) &&
-                event.type == EV_KEY)
-            {
-                printf("code=%d value=%d\n",
-                       event.code,
-                       event.value);
-
-                fflush(stdout);
-
-                if (event.code == KEY_ENTER &&
-                    event.value == 1)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
     return true;
 }
 
@@ -238,46 +185,23 @@ bool initializeSenseHat()
 // Here you can free up everything that you might have opened/allocated
 void freeSenseHat()
 {
-    // Unmap framebuffer memory
     if (framebuffer != NULL) {
-        if (munmap(framebuffer, framebufferSize) == -1){
-            printf("Failed to unmap framebuffer\n");
-        }
-
-        printf("Framebuffer unmapped\n");
-        framebuffer = NULL;
-        framebufferSize = 0;
-    }
-
-    // Close framebuffer device
-    if (framebufferFileDescriptor >= 0){
-        if (close(framebufferFileDescriptor) == -1){
-            printf("Failed to close framebuffer\n");
-        }
-
-        printf("Framebuffer closed\n");
-        framebufferFileDescriptor = -1;
-    }
-
-    //TODO: FIX WHICH FREE SNESE HAT
-    if (framebuffer != NULL)
-    {
         munmap(framebuffer, framebufferSize);
         framebuffer = NULL;
         framebufferSize = 0;
     }
 
-    if (framebufferFileDescriptor >= 0)
-    {
+    if (framebufferFileDescriptor >= 0) {
         close(framebufferFileDescriptor);
         framebufferFileDescriptor = -1;
     }
 
-    if (joystickFileDescriptor >= 0)
-    {
+    if (joystickFileDescriptor >= 0) {
         close(joystickFileDescriptor);
         joystickFileDescriptor = -1;
     }
+
+    printf("Sense HAT resources freed\n");
 }
 
 // This function should return the key that corresponds to the joystick press
