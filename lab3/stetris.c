@@ -9,6 +9,13 @@
 #include <time.h>
 #include <poll.h>
 
+#include <fcntl.h>       // open(), O_RDWR
+#include <sys/mman.h>    // mmap(), munmap()
+#include <sys/ioctl.h>   // ioctl()
+#include <linux/fb.h>    // struct fb_fix_screeninfo, FBIOGET_FSCREENINFO
+#include <stdint.h>      // uint16_t
+#include <dirent.h>      // opendir(), readdir(), closedir()
+
 // The game state can be used to detect what happens on the playfield
 #define GAMEOVER 0
 #define ACTIVE (1 << 0)
@@ -59,12 +66,65 @@ gameConfig game = {
     .initNextGameTick = 50,
 };
 
+//Frame buffer variables
+int framebufferFileDescriptor = -1;
+uint16_t *framebuffer = NULL;
+size_t framebufferSize = 0;
+struct fb_fix_screeninfo framebufferInfo;
+
 // This function is called on the start of your application
 // Here you can initialize what ever you need for your task
 // return false if something fails, else true
 bool initializeSenseHat()
 {
-    return true;
+    char path[32];//TODO: MAKE ITHIS A SMALLER VALUE?
+    struct fb_fix_screeninfo information;
+
+    for (int i = 0; i < 32; i++) // TODO: DON'T JUST GUESS, MAKE THIS MORE ROBUST, MAYBE USE opendir() AND readdir()
+    {
+        snprintf(path, sizeof(path), "/dev/fb%d", i); //dev//fb(i)
+        int fileDescriptor = open(path, O_RDWR);
+        if (fileDescriptor < 0) { // Valid descriptors are non-negative
+            continue;
+        }
+
+        if (ioctl(fileDescriptor, FBIOGET_FSCREENINFO, &information) == -1) {
+            close(fileDescriptor);
+            continue;
+        }
+        printf("Found framebuffer %s: %.16s\n", path, information.id);
+
+        if (strncmp(information.id, "RPi-Sense FB", sizeof(information.id)) != 0){
+            close(fileDescriptor);
+            continue;
+        }
+
+        // We found the Sense HAT framebuffer :P
+        framebufferFileDescriptor = fileDescriptor;
+        framebufferInfo = information;
+        framebufferSize = information.smem_len;
+
+        // Map the framebuffer into memory
+        framebuffer = mmap (NULL, framebufferSize, PROT_READ | PROT_WRITE,
+            MAP_SHARED, framebufferFileDescriptor, 0);
+
+        if (framebuffer == MAP_FAILED){
+            perror("mmap");
+            framebuffer = NULL;
+            close(framebufferFileDescriptor);
+            framebufferFileDescriptor = -1;
+            return false;
+        }
+
+        //TODO: REMOVE THIS TEMPORARY TEST
+        framebuffer[0] = 0xF800;
+
+        printf("Sense HAT framebuffer found at %s\n", path);
+        return true;
+    }
+
+    fprintf(stderr, "ERROR: could not find RPi-Sense FB\n");
+    return false;
 }
 
 // This function is called when the application exits
