@@ -79,17 +79,14 @@ int joystickFileDescriptor = -1;
 #define JOYSTICK_CYCLE 32
 
 //Color definitions
-static inline uint16_t rgb565(unsigned int red, unsigned int green, unsigned int blue)
-{
-    return (red << 11) | (green << 5) | blue; // Shifting bits to respective positions in RGB565 format
-}
-#define COLOR_BLACK   rgb565(0, 0, 0)
-#define COLOR_RED     rgb565(31, 0, 0)
-#define COLOR_GREEN   rgb565(0, 63, 0)
-#define COLOR_BLUE    rgb565(0, 0, 31)
-#define COLOR_YELLOW  rgb565(31, 63, 0)
-#define COLOR_CYAN    rgb565(0, 63, 31)
-#define COLOR_MAGENTA rgb565(31, 0, 31)
+#define RGB565(r, g, b) (((r) << 11) | ((g) << 5) | (b))
+#define COLOR_BLACK   RGB565(0, 0, 0)
+#define COLOR_RED     RGB565(31, 0, 0)
+#define COLOR_GREEN   RGB565(0, 63, 0)
+#define COLOR_BLUE    RGB565(0, 0, 31)
+#define COLOR_YELLOW  RGB565(31, 63, 0)
+#define COLOR_CYAN    RGB565(0, 63, 31)
+#define COLOR_MAGENTA RGB565(31, 0, 31)
 uint16_t colors[6] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW, COLOR_CYAN, COLOR_MAGENTA};
 
 // This function is called on the start of your application
