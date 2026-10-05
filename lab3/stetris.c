@@ -28,6 +28,7 @@
 typedef struct
 {
     bool occupied;
+    uint16_t color;
 } tile;
 
 typedef struct
@@ -76,6 +77,20 @@ struct fb_fix_screeninfo framebufferInfo;
 // Joystick variables
 int joystickFileDescriptor = -1;
 #define JOYSTICK_CYCLE 32
+
+//Color definitions
+static inline uint16_t rgb565(unsigned int red, unsigned int green, unsigned int blue)
+{
+    return (red << 11) | (green << 5) | blue; // Shifting bits to respective positions in RGB565 format
+}
+#define COLOR_BLACK   rgb565(0, 0, 0)
+#define COLOR_RED     rgb565(31, 0, 0)
+#define COLOR_GREEN   rgb565(0, 63, 0)
+#define COLOR_BLUE    rgb565(0, 0, 31)
+#define COLOR_YELLOW  rgb565(31, 63, 0)
+#define COLOR_CYAN    rgb565(0, 63, 31)
+#define COLOR_MAGENTA rgb565(31, 0, 31)
+uint16_t colors[6] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW, COLOR_CYAN, COLOR_MAGENTA};
 
 // This function is called on the start of your application
 // Here you can initialize what ever you need for your task
@@ -223,7 +238,6 @@ int readSenseHatJoystick()
         if (event.type == EV_KEY) {
             if (event.value != 1) {
                 joystickKey = event.code;
-                printf("Joystick key pressed: %d\n", joystickKey);
                 }
             }
         }
@@ -231,12 +245,29 @@ int readSenseHatJoystick()
     return joystickKey;
 }
 
+
 // This function should render the gamefield on the LED matrix. It is called
 // every game tick. The parameter playfieldChanged signals whether the game logic
 // has changed the playfield
 void renderSenseHatMatrix(bool const playfieldChanged)
 {
-    (void)playfieldChanged;
+    if (!playfieldChanged)
+        return;
+
+    size_t pixelsPerRow = framebufferInfo.line_length / sizeof(uint16_t);
+
+    for (unsigned int y = 0; y < game.grid.y; y++) {
+        for (unsigned int x = 0; x < game.grid.x; x++) {
+            coord current = {x, y};
+
+            if (tileOccupied(current)) {
+                framebuffer[y*pixelsPerRow + x] = game.playfield[y][x].color;
+            }
+            else {
+                framebuffer[y*pixelsPerRow + x] = COLOR_BLACK;
+            }
+        }
+    }
 }
 
 // The game logic uses only the following functions to interact with the playfield.
@@ -246,6 +277,7 @@ void renderSenseHatMatrix(bool const playfieldChanged)
 static inline void newTile(coord const target)
 {
     game.playfield[target.y][target.x].occupied = true;
+    game.playfield[target.y][target.x].color = colors[game.tiles % (sizeof(colors))];
 }
 
 static inline void copyTile(coord const to, coord const from)
