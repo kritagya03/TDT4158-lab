@@ -87,7 +87,9 @@ int joystickFileDescriptor = -1;
 #define COLOR_YELLOW  RGB565(31, 63, 0)
 #define COLOR_CYAN    RGB565(0, 63, 31)
 #define COLOR_MAGENTA RGB565(31, 0, 31)
-uint16_t colors[6] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW, COLOR_CYAN, COLOR_MAGENTA};
+
+#define COLOR_COUNT 6
+uint16_t colors[COLOR_COUNT] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW, COLOR_CYAN, COLOR_MAGENTA};
 
 // This function is called on the start of your application
 // Here you can initialize what ever you need for your task
@@ -273,7 +275,7 @@ void renderSenseHatMatrix(bool const playfieldChanged)
 static inline void newTile(coord const target)
 {
     game.playfield[target.y][target.x].occupied = true;
-    game.playfield[target.y][target.x].color = colors[game.tiles % (sizeof(colors))];
+    game.playfield[target.y][target.x].color = colors[game.tiles % (COLOR_COUNT)];
 }
 
 static inline void copyTile(coord const to, coord const from)
