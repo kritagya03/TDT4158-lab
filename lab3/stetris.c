@@ -255,9 +255,8 @@ void renderSenseHatMatrix(bool const playfieldChanged)
 
     for (unsigned int y = 0; y < game.grid.y; y++) {
         for (unsigned int x = 0; x < game.grid.x; x++) {
-            coord current = {x, y};
 
-            if (tileOccupied(current)) {
+            if (game.playfield[y][x].occupied) {
                 framebuffer[y*pixelsPerRow + x] = game.playfield[y][x].color;
             }
             else {
