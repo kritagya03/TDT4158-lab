@@ -211,7 +211,24 @@ void freeSenseHat()
 // !!! when nothing was pressed you MUST return 0 !!!
 int readSenseHatJoystick()
 {
-    return 0;
+    struct pollfd pollJoystick = {
+        .fd = joystickFileDescriptor,
+        .events = POLLIN};
+
+    int joystickKey = 0;
+    struct input_event event;
+
+    while (poll(&pollJoystick, 1, 0) > 0){ // Might be multiple events in buffer
+        read(joystickFileDescriptor, &event, sizeof(event));
+        if (event.type == EV_KEY) {
+            if (event.value != 1) {
+                joystickKey = event.code;
+                printf("Joystick key pressed: %d\n", joystickKey);
+                }
+            }
+        }
+
+    return joystickKey;
 }
 
 // This function should render the gamefield on the LED matrix. It is called
