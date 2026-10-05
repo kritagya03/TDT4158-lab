@@ -276,6 +276,12 @@ static inline void newTile(coord const target)
 {
     game.playfield[target.y][target.x].occupied = true;
     game.playfield[target.y][target.x].color = colors[game.tiles % (COLOR_COUNT)];
+
+    //TODO: TEMPORARY, REMOVE LATER
+    printf("tile=%u index=%u color=0x%04X\n",
+       game.tiles,
+       game.tiles % (COLOR_COUNT),
+       game.playfield[target.y][target.x].color);
 }
 
 static inline void copyTile(coord const to, coord const from)
