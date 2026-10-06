@@ -8,13 +8,11 @@
 #include <string.h>
 #include <time.h>
 #include <poll.h>
-
 #include <fcntl.h>       // open(), O_RDWR
 #include <sys/mman.h>    // mmap(), munmap()
 #include <sys/ioctl.h>   // ioctl()
 #include <linux/fb.h>    // struct fb_fix_screeninfo, FBIOGET_FSCREENINFO
 #include <stdint.h>      // uint16_t
-#include <dirent.h>      // opendir(), readdir(), closedir()
 
 // The game state can be used to detect what happens on the playfield
 #define GAMEOVER 0
@@ -80,7 +78,7 @@ int joystickFileDescriptor = -1;
 
 //Color definitions
 #define RGB565(r, g, b) (((r) << 11) | ((g) << 5) | (b))
-#define COLOR_BLACK   RGB565(0, 0, 0)
+#define COLOR_BLANK   RGB565(0, 0, 0)
 #define COLOR_RED     RGB565(31, 0, 0)
 #define COLOR_GREEN   RGB565(0, 63, 0)
 #define COLOR_BLUE    RGB565(0, 0, 31)
@@ -95,7 +93,7 @@ uint16_t colors[COLOR_COUNT] = {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW
 // Here you can initialize what ever you need for your task
 // return false if something fails, else true
 
-//TODO: NOT HAVE BOUNDED SEARCH APPROACH?
+//TODO: NOT HAVE BOUNDED SEARCH?
 bool initializeSenseHat()
 {
     char path[32];
@@ -173,8 +171,6 @@ bool initializeSenseHat()
         joystickFileDescriptor = fileDescriptor;
         printf("Sense HAT joystick found at %s\n", path);
 
-        //TODO: REMOVE THIS TEMPORARY TEST
-        sleep(10);
         break;
     }
 
@@ -191,6 +187,9 @@ bool initializeSenseHat()
 
         return false;
     }
+
+    printf("Loading...\n");
+    sleep(10);
 
     return true;
 }
@@ -262,7 +261,7 @@ void renderSenseHatMatrix(bool const playfieldChanged)
                 framebuffer[y*pixelsPerRow + x] = game.playfield[y][x].color;
             }
             else {
-                framebuffer[y*pixelsPerRow + x] = COLOR_BLACK;
+                framebuffer[y*pixelsPerRow + x] = COLOR_BLANK;
             }
         }
     }
