@@ -102,7 +102,7 @@ bool initializeSenseHat()
     struct fb_fix_screeninfo information;
     for (int i = 0; i < FRAMEBUFFER_CYCLE; i++)
     {
-        snprintf(path, sizeof(path), "/dev/fb%d", i); //dev//fb(i)
+        snprintf(path, sizeof(path), "/dev/fb%d", i); //dev/fb(i)
         int fileDescriptor = open(path, O_RDWR);
         if (fileDescriptor < 0) {
             continue;
@@ -150,7 +150,7 @@ bool initializeSenseHat()
     char name[256];
     for (int i = 0; i < JOYSTICK_CYCLE; i++)
     {
-        snprintf(path, sizeof(path), "/dev/input/event%d", i);
+        snprintf(path, sizeof(path), "/dev/input/event%d", i); //dev/input/event(i)
         int fileDescriptor = open(path, O_RDONLY | O_NONBLOCK);
         if (fileDescriptor < 0) {
             continue;
