@@ -8,11 +8,11 @@
 #include <string.h>
 #include <time.h>
 #include <poll.h>
-#include <fcntl.h>       // open(), O_RDWR
-#include <sys/mman.h>    // mmap(), munmap()
-#include <sys/ioctl.h>   // ioctl()
-#include <linux/fb.h>    // struct fb_fix_screeninfo, FBIOGET_FSCREENINFO
-#include <stdint.h>      // uint16_t
+#include <fcntl.h>       
+#include <sys/mman.h>    
+#include <sys/ioctl.h>   
+#include <linux/fb.h>    
+#include <stdint.h>      
 
 // The game state can be used to detect what happens on the playfield
 #define GAMEOVER 0
